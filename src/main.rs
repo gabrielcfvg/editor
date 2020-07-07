@@ -26,8 +26,6 @@ impl Row {
         return self.render.len();
     }
 
-
-
     fn renderrow(&mut self) {
 
         self.render = String::new();
@@ -68,8 +66,6 @@ impl Row {
         }
         saida
     }
-
-
 
     fn insertchar(&mut self, mut idx: usize, ch: char) {
 
@@ -471,7 +467,11 @@ impl Editor {
             let conv = self.rows_vec[self.cursor_y as usize].chars[(self.cursor_x as usize)..].to_string();
             let mut saida = Row{chars: conv, render: String::new()};
             saida.renderrow();
-            self.rows_vec.insert(self.cursor_y as usize, saida);
+            self.rows_vec.insert((self.cursor_y + 1) as usize, saida);
+
+	    self.rows_vec[self.cursor_y as usize].chars = self.rows_vec[self.cursor_y as usize].chars[..(self.cursor_x as usize)].to_string();
+	    self.rows_vec[self.cursor_y as usize].renderrow();
+
         }
         else{
             self.rows_vec.insert((self.cursor_y + 1) as usize, Row::from("".to_string()));
