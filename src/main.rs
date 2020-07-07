@@ -300,6 +300,7 @@ impl Editor {
                         }
                     },
                     
+
                     KeyEvent{code: KeyCode::Char(ch), modifiers: _} => {
                         if ch.is_ascii() {
                             self.insertchar(ch);
@@ -492,7 +493,7 @@ impl Editor {
 
         bf.push(format!("[{}]", if self.arquivo != "" {self.arquivo.clone()} else {"sem nome".to_string()}));
         bf.push(format!("{} linhas", self.rows_vec.len()));
-        bf.push(format!("x: {} | y: {}", self.cursor_y+1, self.render_x));
+        bf.push(format!("y: {} | x: {}", self.cursor_y+1, self.render_x+1));
         bf.push(format!("{} FPS", self.fps));
 
         if self.modified {
