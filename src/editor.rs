@@ -18,7 +18,7 @@ pub struct Editor {
     row_vec: Vec<Row>,
     
     #[allow(dead_code)]
-    log: String,
+    pub log: String,
 
     number_row: usize,
     number_col: usize,
@@ -28,6 +28,7 @@ pub struct Editor {
     row_off: usize,
     col_off: usize,
     render_x: usize,
+    next_render_all: bool,
 
     message: String,
     message_time: Option<(SystemTime, i64)>,
@@ -58,6 +59,7 @@ impl Editor {
             row_off: 0,
             col_off: 0,
             render_x: 0,
+            next_render_all: true,
 
             message: String::new(),
             message_time: None,
@@ -124,7 +126,7 @@ impl Editor {
                     if x > 5 && y > 5 {
                         self.number_row = (y-2) as usize;
                         self.number_col = x as usize;
-                        self.main_loop();
+                        self.main_loop(true);
                     }
                 }
                 _ => ()
@@ -154,6 +156,20 @@ impl Editor {
 
                 KeyEvent{code: KeyCode::Char('s'), modifiers: KeyModifiers::CONTROL} => {
                     editor.save()?;
+                }
+
+                KeyEvent{code: KeyCode::Enter, modifiers: _} => {
+                    editor.new_row();
+                }
+
+                KeyEvent{code: KeyCode::Backspace, modifiers: _} => {
+                    editor.delete_char();
+                }
+
+                KeyEvent{code: KeyCode::Tab, modifiers: _} => {
+                    for _ in 0..4 {
+                        editor.insert_char(' ');
+                    }
                 }
 
                 KeyEvent{code: KeyCode::Up, modifiers: _} => {
@@ -191,20 +207,6 @@ impl Editor {
                 KeyEvent{code: KeyCode::Char(ch), modifiers: _} => {
                     if ch.is_ascii() {
                         editor.insert_char(ch);
-                    }
-                }
-
-                KeyEvent{code: KeyCode::Enter, modifiers: _} => {
-                    editor.new_row();
-                }
-
-                KeyEvent{code: KeyCode::Backspace, modifiers: _} => {
-                    editor.delete_char();
-                }
-
-                KeyEvent{code: KeyCode::Tab, modifiers: _} => {
-                    for _ in 0..4 {
-                        editor.insert_char(' ');
                     }
                 }
 
@@ -272,29 +274,54 @@ impl Editor {
         }
     }
 
-    pub fn render_screen(&mut self) {
+    pub fn render_screen(&mut self, force_all: bool) {
+
+        let r = self.row_off;
+        let c = self.col_off;
 
         self.calibrate_positions();
 
-        execute!(stdout(), MoveTo(0, 0), Hide).unwrap();
+        if force_all == false && r == self.row_off && c == self.col_off {
 
-        for idx in self.row_off..(self.row_off + self.number_row) {
+            let idx = self.cursor_y - self.row_off;
 
-            if idx >= self.row_vec.len() {
+            execute!(stdout(), MoveTo(0, (idx) as u16), Hide).unwrap();
 
+            if self.cursor_y >= self.row_vec.len() {
                 print!("~");
 
             }
-            else if self.row_vec[idx].rlen() >= self.col_off {
+            else if self.row_vec[self.cursor_y].rlen() >= self.col_off {
                 let init = self.col_off;
-                let end = min(self.number_col + self.col_off, self.row_vec[idx].rlen());
+                let end = min(self.number_col + self.col_off, self.row_vec[self.cursor_y].rlen());
 
-                print!("{}", &self.row_vec[idx].render[init..end]);
+                print!("{}", &self.row_vec[self.cursor_y].render[init..end]);
             }
 
             execute!(stdout(), Clear(ClearType::UntilNewLine)).unwrap();
-            print!("\r\n")
-            
+
+        }
+        else {
+
+            execute!(stdout(), MoveTo(0, 0), Hide).unwrap();
+
+            for idx in self.row_off..(self.row_off + self.number_row) {
+
+                if idx >= self.row_vec.len() {
+                    print!("~");
+
+                }
+                else if self.row_vec[idx].rlen() >= self.col_off {
+                    let init = self.col_off;
+                    let end = min(self.number_col + self.col_off, self.row_vec[idx].rlen());
+
+                    print!("{}", &self.row_vec[idx].render[init..end]);
+                }
+
+                execute!(stdout(), Clear(ClearType::UntilNewLine)).unwrap();
+                print!("\r\n")
+                
+            }
         }
 
         execute!(stdout(), Show, MoveTo((self.render_x - self.col_off) as u16, (self.cursor_y - self.row_off) as u16)).unwrap();
@@ -414,7 +441,7 @@ impl Editor {
         
         self.row_vec.remove(idx);
         self.modified = true;
-
+        self.next_render_all = true;
     }
 
     pub fn new_row(&mut self) {
@@ -434,6 +461,7 @@ impl Editor {
         }
         self.cursor_y += 1;
         self.cursor_x = 0;
+        self.next_render_all = true;
     }
 
 
@@ -445,7 +473,7 @@ impl Editor {
 
         buffer.push(format!("[{}]", if self.file != "" {self.file.clone()} else {"sem nome".to_string()}));
         buffer.push(format!("{} linhas", self.row_vec.len()));
-        buffer.push(format!("y: {} | x: {}", self.cursor_y+1, self.render_x+1));
+        buffer.push(format!("y: {} | x: {}", self.cursor_y+1, self.render_x + 1));
         buffer.push(format!("{} FPS", self.fps));
 
         if self.modified {
@@ -495,10 +523,14 @@ impl Editor {
         }
 
         self.message = self.message[..min(self.message.len(), self.number_col)].to_string();
-
-        execute!(stdout(), MoveTo(0, (self.number_row + 1) as u16), Clear(ClearType::CurrentLine)).unwrap();
-        print!("{}", self.message);
-        execute!(stdout(), MoveTo((self.render_x - self.col_off) as u16, (self.cursor_y - self.row_off) as u16)).unwrap();
+        execute!(stdout(),
+                 Hide, 
+                 MoveTo(0, (self.number_row + 1) as u16), 
+                 Clear(ClearType::CurrentLine),
+                 Print(&self.message), 
+                 MoveTo((self.render_x - self.col_off) as u16, (self.cursor_y - self.row_off) as u16), 
+                 Show   
+                ).unwrap();
     }
 
     pub fn set_message(&mut self, message: String, secs: i64) {
@@ -509,13 +541,14 @@ impl Editor {
 
 
 
-    pub fn main_loop(&mut self) {
+    pub fn main_loop(&mut self, force_all: bool) {
 
         let tm = SystemTime::now();
 
-        self.render_screen();
+        self.render_screen(force_all || self.next_render_all);
         self.update_bar();
         self.update_message();
+        self.next_render_all = false;
 
         if let Ok(t) = tm.elapsed() {
             self.fps = (1_000_000 / t.as_micros()) as usize;

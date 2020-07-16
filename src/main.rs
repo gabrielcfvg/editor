@@ -28,15 +28,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
         editor.set_message(String::from("sair: CTRL-Q | salvar: CTRL-S"), -1);
-        editor.main_loop();
+        editor.main_loop(true);
         loop {
             if let Ok(_) = editor.process_input() {
-                editor.main_loop();
+                editor.main_loop(false);
             }
             else {
                 break;
             }
         }
+
+        //std::fs::File::create("saida.log")?.write(editor.log.as_bytes());
 
         Ok(())
     };
@@ -52,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => ()
     }
 
-
+    
 
     Ok(())
 }
