@@ -337,13 +337,13 @@ impl Editor {
             stdout(),
             MoveTo(0, (self.number_row + 1) as u16),
             Clear(ClearType::CurrentLine),
-            Print(format!("{}: {}", message, text)),
+            Print(format!("{}:  (ESC para sair)!", message)),
             MoveTo((message.len() + 2 + cursor) as u16, (self.number_row+1) as u16)
         ).unwrap();
 
         loop {
 
-            if let Ok(Event::Key(key_event)) = self.recv_key() {
+            if let Ok(Event::Key(key_event)) = read() {
 
                 match key_event {
 
