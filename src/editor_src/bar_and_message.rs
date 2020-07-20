@@ -1,10 +1,8 @@
 use crate::Editor;
 
 use std::time::SystemTime;
-use std::io::{stdout, Write};
-use std::cmp::min;
 
-use crossterm::{execute, 
+use crossterm::{QueueableCommand,
     cursor::{MoveTo, Hide, Show}, 
     terminal::{Clear, ClearType},
     style::{SetForegroundColor, SetBackgroundColor, Color, Print, ResetColor}
@@ -40,23 +38,18 @@ impl Editor {
         }
         saida = saida[..self.number_col].to_string();
 
-        execute!(
-            stdout(),
-            Hide,
-            MoveTo(0, self.number_row as u16),
-            Clear(ClearType::CurrentLine),
-
-            SetForegroundColor(Color::Black),
-            SetBackgroundColor(Color::White),
-            Print(saida),
-
-            ResetColor,
-            MoveTo((self.render_x - self.col_off) as u16, (self.cursor_y - self.row_off) as u16),
-            Show,
-        ).unwrap();
+        self.my_stdout.queue(Hide).unwrap()
+                 .queue(MoveTo(0, self.number_row as u16)).unwrap()
+                 .queue(Clear(ClearType::CurrentLine)).unwrap()
+                 .queue(SetForegroundColor(Color::Black)).unwrap()
+                 .queue(SetBackgroundColor(Color::White)).unwrap()
+                 .queue(Print(saida)).unwrap()
+                 .queue(ResetColor).unwrap()
+                 .queue(MoveTo((self.render_x - self.col_off) as u16, (self.cursor_y - self.row_off) as u16)).unwrap()
+                 .queue(Show).unwrap();
     }
 
-    pub fn update_message(&mut self) {  
+    pub fn update_message(&mut self) { 
 
         if let Some(tm) = self.message_time {
             match tm.0.elapsed() {
@@ -69,15 +62,12 @@ impl Editor {
             }
         }
 
-        self.message = self.message[..min(self.message.len(), self.number_col)].to_string();
-        execute!(stdout(),
-                 Hide, 
-                 MoveTo(0, (self.number_row + 1) as u16), 
-                 Clear(ClearType::CurrentLine),
-                 Print(&self.message), 
-                 MoveTo((self.render_x - self.col_off) as u16, (self.cursor_y - self.row_off) as u16), 
-                 Show   
-                ).unwrap();
+        self.my_stdout.queue(Hide).unwrap()
+                 .queue(MoveTo(0, (self.number_row + 1) as u16)).unwrap()
+                 .queue(Clear(ClearType::CurrentLine)).unwrap()
+                 .queue(Print(&self.message)).unwrap()
+                 .queue(MoveTo((self.render_x - self.col_off) as u16, (self.cursor_y - self.row_off) as u16)).unwrap()
+                 .queue(Show).unwrap();
     }
 
     pub fn set_message(&mut self, message: String, secs: i64) {

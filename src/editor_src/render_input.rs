@@ -1,12 +1,12 @@
 use crate::Editor;
 
-use std::io::{stdout, Write};
 use std::cmp::{min, max};
 use crossterm::{
-    execute, 
+    QueueableCommand,
     cursor::{MoveTo, Hide, Show}, 
     terminal::{Clear, ClearType},
     event::{read, Event, KeyCode, KeyEvent, KeyModifiers},
+    style::{SetForegroundColor, Color, Print, ResetColor}
     
 };
 
@@ -172,7 +172,21 @@ impl Editor {
         }
     }
 
+    fn get_color(num: u8) -> Color {
+
+        match num {
+            1 => Color::Blue,
+            _ => Color::White,
+        }
+    }
+
     pub fn render_screen(&mut self, force_all: bool) {
+
+        fn print_line(mut my_stdout: std::io::Stdout, cy: usize, init: usize, end: usize) {
+
+            let mut color: u8 = 0;
+
+        }
 
         let r = self.row_off;
         let c = self.col_off;
@@ -183,7 +197,8 @@ impl Editor {
 
             let idx = self.cursor_y - self.row_off;
 
-            execute!(stdout(), MoveTo(0, (idx) as u16), Hide).unwrap();
+            self.my_stdout.queue(MoveTo(0, (idx) as u16)).unwrap()
+                     .queue(Hide).unwrap();
 
             if self.cursor_y >= self.row_vec.len() {
                 print!("~");
@@ -196,12 +211,13 @@ impl Editor {
                 print!("{}", &self.row_vec[self.cursor_y].render[init..end]);
             }
 
-            execute!(stdout(), Clear(ClearType::UntilNewLine)).unwrap();
+            self.my_stdout.queue(Clear(ClearType::UntilNewLine)).unwrap();
 
         }
         else {
 
-            execute!(stdout(), MoveTo(0, 0), Hide).unwrap();
+            self.my_stdout.queue(MoveTo(0, 0)).unwrap()
+                     .queue(Hide).unwrap();
 
             for idx in self.row_off..(self.row_off + self.number_row) {
 
@@ -216,13 +232,14 @@ impl Editor {
                     print!("{}", &self.row_vec[idx].render[init..end]);
                 }
 
-                execute!(stdout(), Clear(ClearType::UntilNewLine)).unwrap();
-                print!("\r\n")
+                self.my_stdout.queue(Clear(ClearType::UntilNewLine)).unwrap()
+                     .queue(Print("\r\n")).unwrap();
                 
             }
         }
 
-        execute!(stdout(), Show, MoveTo((self.render_x - self.col_off) as u16, (self.cursor_y - self.row_off) as u16)).unwrap();
+        self.my_stdout.queue(Show).unwrap()
+                 .queue(MoveTo((self.render_x - self.col_off) as u16, (self.cursor_y - self.row_off) as u16)).unwrap();
 
     }
 

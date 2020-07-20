@@ -5,7 +5,7 @@ mod editor;
 #[path = "editor_src/bar_and_message.rs"] mod bar_and_message;
 
 mod row;
-
+mod syntax_consts;
 
 use editor::Editor;
 use row::Row;
@@ -21,6 +21,7 @@ use crossterm::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     
+
     let res: Result<(), Box<dyn std::error::Error>> = {
 
         execute!(stdout(), EnterAlternateScreen)?;
@@ -31,6 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(v) = std::env::args().nth(1) {
             editor.open(v)?;
         }
+
 
         editor.set_message(String::from("sair: CTRL-Q | salvar: CTRL-S"), -1);
         editor.main_loop(true);

@@ -1,9 +1,12 @@
 use std::cmp::min;
+use std::collections::HashMap;
 
 
 pub struct Row {
+    pub syntax_hashmap: Option<&'static HashMap<char, u8>>,
     pub chars: String,
     pub render: String,
+    pub highlight: Vec<u8>
 }
 
 impl Row {
@@ -16,6 +19,29 @@ impl Row {
         self.render.len()
     }
 
+    pub fn update_syntax(&mut self) {
+
+        self.highlight = vec![0; self.rlen()];
+        
+        if let Some(syntax) = self.syntax_hashmap {
+            // self.highlight = self.render.chars().map(|x| *(*syntax).get(&x).unwrap_or(&0u8)).collect();
+
+            let inte: Option<u8> = None;
+
+            for ch in self.render.chars() {
+
+                if let None = inte {
+                    self.highlight.push(*(*syntax).get(&ch).unwrap_or(&0u8));
+                }
+                else if let Some(ct) = inte {
+                    self.highlight.push(ct);
+                }
+
+            }
+        }
+
+        assert_eq!(self.highlight.len(), self.rlen());
+    }
 
     pub fn render_row(&mut self) {
 
@@ -29,13 +55,16 @@ impl Row {
                 self.render.push(ch);
             }
         }
+        self.update_syntax()
     }
 
-    pub fn from(value: &String) -> Self {
+    pub fn from(value: &String, syntax: Option<&'static HashMap<char, u8>>) -> Self {
     
         let mut saida = Row {
+            syntax_hashmap: syntax,
             chars: value.clone(),
-            render: String::new()
+            render: String::new(),
+            highlight: vec![]
         };
 
         saida.render_row();

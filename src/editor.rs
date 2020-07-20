@@ -2,6 +2,8 @@ use crate::Row;
 use std::time::SystemTime;
 use std::io::{stdout, Write, BufReader, BufRead};
 use std::fs::File;
+use std::collections::HashMap;
+use crate::syntax_consts;
 
 use crossterm::{execute, 
     cursor::MoveTo, 
@@ -12,6 +14,8 @@ pub struct Editor {
     
     pub file: String,
     pub row_vec: Vec<Row>,
+    pub syntax: Option<&'static HashMap<char, u8>>,
+    pub my_stdout: std::io::Stdout,
     
     #[allow(dead_code)]
     pub log: String,
@@ -46,6 +50,8 @@ impl Editor {
             file: String::new(),
             row_vec: vec![],
             log: String::new(),
+            syntax: None,
+            my_stdout: stdout(),
 
             number_row: (rows-2) as usize,
             number_col: cols as usize,
@@ -71,8 +77,12 @@ impl Editor {
         let file = File::open(&path)?;
         let file = BufReader::new(file);
         let file: Vec<String> = file.lines().map(|x| x.unwrap().replace("\r", "").replace("\n", "")).collect();
-        let lista: Vec<Row> = file.iter().map(|x| Row::from(&x)).collect();
+        let lista: Vec<Row> = file.iter().map(|x| Row::from(&x, self.syntax)).collect();
 
+        if path.split(".").last().unwrap() == "c" {
+            self.syntax = Some(&syntax_consts::C_SYNTAX);
+            //lista.push(Row::from(&String::from("SIM"), self.syntax));
+        }
 
         self.file = path;
         self.row_vec = lista;
@@ -114,6 +124,7 @@ impl Editor {
 
     pub fn main_loop(&mut self, force_all: bool) {
 
+
         let tm = SystemTime::now();
 
         self.render_screen(force_all || self.next_render_all);
@@ -124,5 +135,7 @@ impl Editor {
         if let Ok(t) = tm.elapsed() {
             self.fps = (1_000_000 / t.as_micros()) as usize;
         }
+
+        self.my_stdout.flush().unwrap();
     }
 }
