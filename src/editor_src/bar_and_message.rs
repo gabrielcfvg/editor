@@ -62,8 +62,7 @@ impl Editor {
             match tm.0.elapsed() {
                 Ok(dur) => {
                     if tm.1 != -1 &&dur.as_secs() > tm.1 as u64{
-                        self.message = String::new();
-                        self.message_time = None
+                        self.set_message(String::from("sair: CTRL-Q | salvar: CTRL-S"), -1)
                     }
                 }
                 _ => ()
