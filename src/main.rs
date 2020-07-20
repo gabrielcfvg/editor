@@ -1,5 +1,11 @@
 mod editor;
+#[path = "editor_src/editor_prompts.rs"] mod editor_prompts;
+#[path = "editor_src/render_input.rs"] mod render_input;
+#[path = "editor_src/char_row_manipulation.rs"] mod char_row_manipulation;
+#[path = "editor_src/bar_and_message.rs"] mod bar_and_message;
+
 mod row;
+
 
 use editor::Editor;
 use row::Row;
@@ -25,7 +31,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(v) = std::env::args().nth(1) {
             editor.open(v)?;
         }
-
 
         editor.set_message(String::from("sair: CTRL-Q | salvar: CTRL-S"), -1);
         editor.main_loop(true);
