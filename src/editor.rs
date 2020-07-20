@@ -95,6 +95,7 @@ impl Editor {
 
         let mut saida: String = String::new();
 
+        self.modified = false;
         for row in self.row_vec.iter() {
             saida.push_str(row.chars.as_str());
             saida.push('\n');
@@ -107,8 +108,10 @@ impl Editor {
             if let Some(path) = self.prompt(String::from("salvar como")) {
                 File::create(path)?.write(saida.as_bytes())?;
             }
+            else {
+                self.modified = true;
+            }
         }
-        self.modified = false;
 
         Ok(())
     }
@@ -139,9 +142,10 @@ impl Editor {
 
         fn process_key_event(editor: &mut Editor, key_event: KeyEvent) -> Result<(), Box<dyn std::error::Error>> {
 
-            match key_event {
-                    
-                KeyEvent{code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL} => {
+            match key_event {            
+
+                KeyEvent{code: KeyCode::Char('q'), modifiers: KeyModifiers::CONTROL} |
+                KeyEvent{code: KeyCode::Char('x'), modifiers: KeyModifiers::CONTROL} => {
                 
                     if editor.modified && editor.quit_number > 0 {
                         editor.set_message(format!("Aperte CTRL-Q mais {} vezes para sair!!!", editor.quit_number), 3);
