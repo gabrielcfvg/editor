@@ -1,13 +1,12 @@
 use crate::Row;
-use crate::Editor;
-
+use crate::{Editor, get_syntax};
 
 impl Editor {
 
     pub fn insert_char(&mut self, ch: char) {
 
         if self.cursor_y == self.row_vec.len() {
-            self.row_vec.push(Row::from(&String::new(), self.syntax))
+            self.row_vec.push(Row::from(&String::new(), get_syntax(self)))
         }
 
         self.row_vec[self.cursor_y].insert_char(self.cursor_x, ch);
@@ -53,14 +52,14 @@ impl Editor {
     pub fn new_row(&mut self) {
 
         if self.cursor_x == 0 {
-            self.row_vec.insert(self.cursor_y, Row::from(&String::new(), self.syntax));
+            self.row_vec.insert(self.cursor_y, Row::from(&String::new(), get_syntax(self)));
         }
         else if self.cursor_x == self.row_vec[self.cursor_y].len() {
-            self.row_vec.insert(self.cursor_y + 1, Row::from(&String::new(), self.syntax));
+            self.row_vec.insert(self.cursor_y + 1, Row::from(&String::new(), get_syntax(self)));
         }
         else {
             let value = self.row_vec[self.cursor_y].chars[self.cursor_x..].to_string();
-            self.row_vec.insert(self.cursor_y + 1, Row::from(&value, self.syntax));
+            self.row_vec.insert(self.cursor_y + 1, Row::from(&value, get_syntax(self)));
 
             self.row_vec[self.cursor_y].chars = self.row_vec[self.cursor_y].chars[..self.cursor_x].to_string();
             self.row_vec[self.cursor_y].render_row();

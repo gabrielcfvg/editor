@@ -185,25 +185,34 @@ impl Editor {
         fn print_line(editor: &mut Editor, cy: usize, init: usize, end: usize) {
 
             let row = &editor.row_vec[cy];
+                
+            if row.hlen() != 0 {
 
-            let mut color: u8 = 0;
+                let mut color: u8 = 0;
 
-            for (i, ch) in row.render[init..end].chars().enumerate() {
+                for (i, ch) in row.render[init..end].chars().enumerate() {
 
-                if row.highlight[i] == color {
+                    if row.highlight[i] == color {
 
-                    editor.my_stdout.queue(Print(ch)).unwrap();
+                        editor.my_stdout.queue(Print(ch)).unwrap();
+
+                    }
+                    else {
+
+                        editor.my_stdout.queue(ResetColor).unwrap()
+                                        .queue(SetForegroundColor(Editor::get_color(row.highlight[i]))).unwrap()
+                                        .queue(Print(ch)).unwrap();
+
+                        color = i as u8;
+                    }
+
 
                 }
-                else {
+            }
+            else {
 
-                    editor.my_stdout.queue(ResetColor).unwrap()
-                                    .queue(SetForegroundColor(Editor::get_color(row.highlight[i]))).unwrap()
-                                    .queue(Print(ch)).unwrap();
-
-                    color = i as u8;
-                }
-
+                editor.my_stdout.queue(ResetColor).unwrap()
+                                .queue(Print(&row.render)).unwrap();
 
             }
 

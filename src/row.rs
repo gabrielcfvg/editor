@@ -1,8 +1,11 @@
 use std::cmp::min;
-use std::collections::HashMap;
+use std::rc::Rc;
+use crate::Syntax;
+
 
 pub struct Row {
-    pub syntax_hashmap: Option<&'static HashMap<char, u8>>,
+    
+    pub syntax: Option<Rc<Syntax>>,
     pub chars: String,
     pub render: String,
     pub highlight: Vec<u8>
@@ -18,11 +21,16 @@ impl Row {
         self.render.len()
     }
 
+    pub fn hlen(&self) -> usize {
+        return self.highlight.len();
+    }
+
     pub fn update_syntax(&mut self) {
 
+        /*
         self.highlight = vec![];        
         
-        if let Some(syntax) = self.syntax_hashmap {
+        if let Some(syntax) = self.editor.syntax {
             // self.highlight = self.render.chars().map(|x| *(*syntax).get(&x).unwrap_or(&0u8)).collect();
 
             let inte: Option<u8> = None;
@@ -42,6 +50,7 @@ impl Row {
         }
 
         assert_eq!(self.highlight.len(), self.rlen());
+        */
     }
 
     pub fn render_row(&mut self) {
@@ -59,14 +68,14 @@ impl Row {
         self.update_syntax()
     }
 
-    pub fn from(value: &String, syntax: Option<&'static HashMap<char, u8>>) -> Self {
+    pub fn from(value: &String, syntax: Option<Rc<Syntax>>) -> Self {
     
         let mut saida = Row {
-            syntax_hashmap: syntax,
+            syntax,
             chars: value.clone(),
             render: String::new(),
             highlight: vec![]
-        };
+        }; 
 
         saida.render_row();
 

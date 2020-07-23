@@ -1,9 +1,9 @@
 use crate::Row;
+use crate::Syntax;
 use std::time::SystemTime;
 use std::io::{stdout, Write, BufReader, BufRead};
 use std::fs::File;
-use std::collections::HashMap;
-use crate::syntax_consts;
+use std::rc::Rc;
 
 use crossterm::{execute, 
     cursor::MoveTo, 
@@ -14,8 +14,8 @@ pub struct Editor {
     
     pub file: String,
     pub row_vec: Vec<Row>,
-    pub syntax: Option<&'static HashMap<char, u8>>,
     pub my_stdout: std::io::Stdout,
+    pub syntax: Option<Rc<Syntax>>,
     
     #[allow(dead_code)]
     pub log: String,
@@ -50,8 +50,8 @@ impl Editor {
             file: String::new(),
             row_vec: vec![],
             log: String::new(),
-            syntax: None,
             my_stdout: stdout(),
+            syntax: None,
 
             number_row: (rows-2) as usize,
             number_col: cols as usize,
@@ -73,15 +73,16 @@ impl Editor {
     }
 
     pub fn open(&mut self, path: String) -> Result<(), Box<dyn std::error::Error>> {
-
+    
         if path.split(".").last().unwrap() == "c" {
-            self.syntax = Some(&syntax_consts::C_SYNTAX);
+            self.syntax = None;
         }
+
 
         let file = File::open(&path)?;
         let file = BufReader::new(file);
         let file: Vec<String> = file.lines().map(|x| x.unwrap().replace("\r", "").replace("\n", "")).collect();
-        let lista: Vec<Row> = file.iter().map(|x| Row::from(&x, self.syntax)).collect();
+        let lista: Vec<Row> = file.iter().map(|x| Row::from(&x, get_syntax(self))).collect();
 
         /*
         if path.split(".").last().unwrap() == "c" {
@@ -142,5 +143,16 @@ impl Editor {
         }
 
         self.my_stdout.flush().unwrap();
+    }
+}
+
+
+pub fn get_syntax(editor: &Editor) -> Option<Rc<Syntax>> {
+            
+    if let Some(_) = editor.syntax {
+        return Some(editor.syntax.as_ref().unwrap().clone());
+    }
+    else {
+        return None;
     }
 }

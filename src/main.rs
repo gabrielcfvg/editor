@@ -5,9 +5,8 @@ mod editor;
 #[path = "editor_src/bar_and_message.rs"] mod bar_and_message;
 
 mod row;
-mod syntax_consts;
 
-use editor::Editor;
+use editor::{Editor, get_syntax};
 use row::Row;
 
 use std::io::{Write, stdout};
@@ -17,6 +16,8 @@ use crossterm::{
     execute
 
 };
+
+pub struct Syntax;
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -45,8 +46,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        editor.log.push_str(format!("{:?}", editor.row_vec[3].syntax_hashmap).as_str());
-        std::fs::File::create("saida.log")?.write(editor.log.as_bytes()).unwrap();
+        
+        //std::fs::File::create("saida.log")?.write(editor.log.as_bytes()).unwrap();
 
         Ok(())
     };
