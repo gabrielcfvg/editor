@@ -45,7 +45,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        //std::fs::File::create("saida.log")?.write(editor.log.as_bytes());
+        editor.log.push_str(format!("{:?}", editor.row_vec[3].syntax_hashmap).as_str());
+        std::fs::File::create("saida.log")?.write(editor.log.as_bytes()).unwrap();
 
         Ok(())
     };

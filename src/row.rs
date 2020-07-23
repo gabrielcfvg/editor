@@ -1,7 +1,6 @@
 use std::cmp::min;
 use std::collections::HashMap;
 
-
 pub struct Row {
     pub syntax_hashmap: Option<&'static HashMap<char, u8>>,
     pub chars: String,
@@ -21,7 +20,7 @@ impl Row {
 
     pub fn update_syntax(&mut self) {
 
-        self.highlight = vec![0; self.rlen()];
+        self.highlight = vec![];        
         
         if let Some(syntax) = self.syntax_hashmap {
             // self.highlight = self.render.chars().map(|x| *(*syntax).get(&x).unwrap_or(&0u8)).collect();
@@ -36,8 +35,10 @@ impl Row {
                 else if let Some(ct) = inte {
                     self.highlight.push(ct);
                 }
-
             }
+        }
+        else {
+            self.highlight = vec![0; self.rlen()];
         }
 
         assert_eq!(self.highlight.len(), self.rlen());

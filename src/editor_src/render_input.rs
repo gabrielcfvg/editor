@@ -172,7 +172,7 @@ impl Editor {
         }
     }
 
-    fn get_color(num: u8) -> Color {
+    pub fn get_color(num: u8) -> Color {
 
         match num {
             1 => Color::Blue,
@@ -182,9 +182,30 @@ impl Editor {
 
     pub fn render_screen(&mut self, force_all: bool) {
 
-        fn print_line(mut my_stdout: std::io::Stdout, cy: usize, init: usize, end: usize) {
+        fn print_line(editor: &mut Editor, cy: usize, init: usize, end: usize) {
+
+            let row = &editor.row_vec[cy];
 
             let mut color: u8 = 0;
+
+            for (i, ch) in row.render[init..end].chars().enumerate() {
+
+                if row.highlight[i] == color {
+
+                    editor.my_stdout.queue(Print(ch)).unwrap();
+
+                }
+                else {
+
+                    editor.my_stdout.queue(ResetColor).unwrap()
+                                    .queue(SetForegroundColor(Editor::get_color(row.highlight[i]))).unwrap()
+                                    .queue(Print(ch)).unwrap();
+
+                    color = i as u8;
+                }
+
+
+            }
 
         }
 
@@ -208,7 +229,8 @@ impl Editor {
                 let init = self.col_off;
                 let end = min(self.number_col + self.col_off, self.row_vec[self.cursor_y].rlen());
 
-                print!("{}", &self.row_vec[self.cursor_y].render[init..end]);
+                print_line(self, self.cursor_y, init, end);
+                //self.my_stdout.queue(Print(&self.row_vec[self.cursor_y].render[init..end])).unwrap();
             }
 
             self.my_stdout.queue(Clear(ClearType::UntilNewLine)).unwrap();
@@ -229,7 +251,7 @@ impl Editor {
                     let init = self.col_off;
                     let end = min(self.number_col + self.col_off, self.row_vec[idx].rlen());
 
-                    print!("{}", &self.row_vec[idx].render[init..end]);
+                    print_line(self, idx, init, end);
                 }
 
                 self.my_stdout.queue(Clear(ClearType::UntilNewLine)).unwrap()

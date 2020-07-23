@@ -74,15 +74,20 @@ impl Editor {
 
     pub fn open(&mut self, path: String) -> Result<(), Box<dyn std::error::Error>> {
 
+        if path.split(".").last().unwrap() == "c" {
+            self.syntax = Some(&syntax_consts::C_SYNTAX);
+        }
+
         let file = File::open(&path)?;
         let file = BufReader::new(file);
         let file: Vec<String> = file.lines().map(|x| x.unwrap().replace("\r", "").replace("\n", "")).collect();
         let lista: Vec<Row> = file.iter().map(|x| Row::from(&x, self.syntax)).collect();
 
+        /*
         if path.split(".").last().unwrap() == "c" {
-            self.syntax = Some(&syntax_consts::C_SYNTAX);
-            //lista.push(Row::from(&String::from("SIM"), self.syntax));
+            lista.push(Row::from(&String::from("SIM"), self.syntax));
         }
+        */
 
         self.file = path;
         self.row_vec = lista;
