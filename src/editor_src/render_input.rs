@@ -175,7 +175,7 @@ impl Editor {
     pub fn get_color(num: u8) -> Color {
 
         match num {
-            1 => Color::Blue,
+            1 => Color::Green,
             _ => Color::White,
         }
     }
@@ -192,7 +192,7 @@ impl Editor {
 
                 for (i, ch) in row.render[init..end].chars().enumerate() {
 
-                    if row.highlight[i] == color {
+                    if row.highlight[i+init] == color {
 
                         editor.my_stdout.queue(Print(ch)).unwrap();
 
@@ -200,13 +200,13 @@ impl Editor {
                     else {
 
                         editor.my_stdout.queue(ResetColor).unwrap()
-                                        .queue(SetForegroundColor(Editor::get_color(row.highlight[i]))).unwrap()
+                                        .queue(SetForegroundColor(Editor::get_color(row.highlight[i+init]))).unwrap()
                                         .queue(Print(ch)).unwrap();
 
                         color = i as u8;
                     }
 
-
+                    editor.my_stdout.queue(ResetColor).unwrap();
                 }
             }
             else {

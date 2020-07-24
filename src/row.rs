@@ -51,6 +51,20 @@ impl Row {
 
         assert_eq!(self.highlight.len(), self.rlen());
         */
+
+        self.highlight = vec![];
+        for ch in self.render.chars() {
+            if ch.is_numeric() {
+                self.highlight.push(1);
+            }
+            else {
+                self.highlight.push(0);
+            }
+        }
+
+        assert_eq!(self.rlen(), self.hlen());
+
+
     }
 
     pub fn render_row(&mut self) {
@@ -80,6 +94,10 @@ impl Row {
         saida.render_row();
 
         saida
+    }
+
+    pub fn change_syntax(&mut self, syntax: Option<Rc<Syntax>>) {
+        self.syntax = syntax;
     }
 
     pub fn cx_to_rx(&self, idx: usize) -> usize {
