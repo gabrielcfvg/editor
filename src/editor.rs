@@ -3,7 +3,6 @@ use crate::Syntax;
 use std::time::SystemTime;
 use std::io::{stdout, Write, BufReader, BufRead};
 use std::fs::File;
-use std::rc::Rc;
 
 use crossterm::{execute, 
     cursor::MoveTo, 
@@ -15,7 +14,8 @@ pub struct Editor {
     pub file: String,
     pub row_vec: Vec<Row>,
     pub my_stdout: std::io::Stdout,
-    pub syntax: Option<Rc<Syntax>>,
+    pub syntax: Option<&'static Syntax>,
+    pub ptr: Option<*mut Editor>,
     
     #[allow(dead_code)]
     pub log: String,
@@ -41,48 +41,57 @@ pub struct Editor {
 impl Editor {
     
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-
-        let (cols, rows) = crossterm::terminal::size().unwrap();   
+        
+        #[allow(unused_mut)]
+        let (mut cols, mut rows) = crossterm::terminal::size().unwrap();   
         execute!(stdout(), MoveTo(0, 0), Clear(ClearType::All))?;
+        
+        //cols = 150; //debug
+        //rows = 25; //debug
 
-        Ok(Editor {
-            
-            file: String::new(),
-            row_vec: vec![],
-            log: String::new(),
-            my_stdout: stdout(),
-            syntax: None,
+        Ok(
+            Editor {
+                
+                file: String::new(),
+                row_vec: vec![],
+                log: String::new(),
+                my_stdout: stdout(),
+                syntax: None,
+                ptr: None,
 
-            number_row: (rows-2) as usize,
-            number_col: cols as usize,
+                number_row: (rows-2) as usize,
+                number_col: cols as usize,
 
-            cursor_x: 0,
-            cursor_y: 0,
-            row_off: 0,
-            col_off: 0,
-            render_x: 0,
-            next_render_all: true,
+                cursor_x: 0,
+                cursor_y: 0,
+                row_off: 0,
+                col_off: 0,
+                render_x: 0,
+                next_render_all: true,
 
-            message: String::new(),
-            message_time: None,
-            fps: 0,
-            modified: false,
-            quit_number: 3,
-
-        })
+                message: String::new(),
+                message_time: None,
+                fps: 0,
+                modified: false,
+                quit_number: 3,
+            }
+        )
     }
 
     pub fn open(&mut self, path: String) -> Result<(), Box<dyn std::error::Error>> {
     
         if path.split(".").last().unwrap() == "c" {
-            self.syntax = None;
+            self.syntax = Some(&crate::syntax::C);
         }
 
 
         let file = File::open(&path)?;
         let file = BufReader::new(file);
         let file: Vec<String> = file.lines().map(|x| x.unwrap().replace("\r", "").replace("\n", "")).collect();
-        let lista: Vec<Row> = file.iter().map(|x| Row::from(&x, get_syntax(self))).collect();
+        let lista: Vec<Row> = file.iter().map(|x| {let saida = Row::from(self.cursor_y, &x, self.ptr());
+                                                   self.cursor_y += 1;
+                                                   saida}
+            ).collect();
 
         /*
         if path.split(".").last().unwrap() == "c" {
@@ -101,6 +110,10 @@ impl Editor {
         self.render_x = 0;
 
         Ok(())
+    }
+
+    pub fn ptr(&self) -> *mut Editor {
+        return self.ptr.unwrap();
     }
 
     pub fn save(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -146,13 +159,3 @@ impl Editor {
     }
 }
 
-
-pub fn get_syntax(editor: &Editor) -> Option<Rc<Syntax>> {
-            
-    if let Some(_) = editor.syntax {
-        return Some(editor.syntax.as_ref().unwrap().clone());
-    }
-    else {
-        return None;
-    }
-}

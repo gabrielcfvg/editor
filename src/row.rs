@@ -1,14 +1,14 @@
 use std::cmp::min;
-use std::rc::Rc;
+use crossterm::style::Color;
 use crate::Syntax;
-
 
 pub struct Row {
     
-    pub syntax: Option<Rc<Syntax>>,
+    pub editor: *mut crate::Editor,
     pub chars: String,
     pub render: String,
-    pub highlight: Vec<u8>
+    pub highlight: Vec<Color>,
+    pub ends_in_comment: bool
 }
 
 impl Row {
@@ -25,49 +25,114 @@ impl Row {
         return self.highlight.len();
     }
 
-    pub fn update_syntax(&mut self) {
+    pub fn update_syntax(&mut self, row_idx: usize) {
 
-        /*
-        self.highlight = vec![];        
-        
-        if let Some(syntax) = self.editor.syntax {
-            // self.highlight = self.render.chars().map(|x| *(*syntax).get(&x).unwrap_or(&0u8)).collect();
+        unsafe {
+            
+            if let Some(syntax) = (*self.editor).syntax {
 
-            let inte: Option<u8> = None;
+                // caso a row anterior termine dentro de um comment block, essa já iniciará nesse estado
+                // let mut in_comment_block: bool = {if (*self.editor).row_vec[row_idx].ends_in_comment { true } else { false }};
+                //let mut in_comment: bool = false;
+                let mut jump: usize = 0;
 
-            for ch in self.render.chars() {
+                self.highlight = vec![Color::White; self.render.len()];
+                for (idx, ch) in self.render.chars().enumerate() {
+                    
+                    if jump != 0 {
+                        jump -= 1;
+                        continue;
+                    }
 
-                if let None = inte {
-                    self.highlight.push(*(*syntax).get(&ch).unwrap_or(&0u8));
+
+
+
+                    /*
+
+                    código que faria a identificação e rendenização de comentários multilinha
+
+                    if let Some((bc_init, bc_end)) = syntax.block_comment {
+                        if in_comment_block {
+                            
+                            if 
+                                ch == bc_end.chars().nth(0).unwrap()     &&
+                                self.render.len() - idx >= bc_end.len()  &&
+                                &self.render[idx..(idx + bc_end.len())] == bc_end 
+                            
+                            {
+                                
+                                for i in idx..idx+bc_end.len() {
+                                    self.highlight[idx+i] = syntax.colors.comment;
+                                }
+                                
+                                jump = bc_end.len();
+                                in_comment_block = false;
+                                continue;
+                            }
+                            
+                            self.highlight[idx] = syntax.colors.comment;
+                            continue;
+                        }
+                        else {
+                            
+                            if 
+                                ch == bc_init.chars().nth(0).unwrap()     && 
+                                self.render.len() - idx >= bc_init.len()  &&
+                                &self.render[idx..(idx + bc_init.len())] == bc_init 
+                            
+                            {  
+                                for i in idx..idx+bc_init.len() {
+                                    self.highlight[idx+i] = syntax.colors.comment;
+                                }
+                                
+                                jump = bc_init.len();
+                                in_comment_block = true;
+                                continue;
+                            }
+                        }
+                    }
+                    */
+                
+
+                    if let Some(c_init) = syntax.line_comment {
+
+                        if 
+                           ch == c_init.chars().nth(0).unwrap()      && 
+                           self.render.len() - idx >= c_init.len()   && 
+                           &self.render[idx..(idx+c_init.len())] == c_init
+                           
+                        {
+ 
+                            for i in idx..(self.render.len()) {
+                                self.highlight[i] = syntax.colors.comment;
+                            }
+                            break;
+                        }
+                    }
+
+                    if ch.is_numeric() {
+                        self.highlight[idx] = syntax.colors.number;
+                        continue;
+                    }
+                    
+                    self.highlight[idx] = Color::White;
+                    
                 }
-                else if let Some(ct) = inte {
-                    self.highlight.push(ct);
-                }
-            }
-        }
-        else {
-            self.highlight = vec![0; self.rlen()];
-        }
-
-        assert_eq!(self.highlight.len(), self.rlen());
-        */
-
-        self.highlight = vec![];
-        for ch in self.render.chars() {
-            if ch.is_numeric() {
-                self.highlight.push(1);
+            
+            
+            
+            
+            
             }
             else {
-                self.highlight.push(0);
+                self.highlight = vec![Color::White; self.rlen()];
             }
         }
-
+    
         assert_eq!(self.rlen(), self.hlen());
-
-
     }
 
-    pub fn render_row(&mut self) {
+    pub fn render_row(&mut self, row_idx: usize) {
 
         self.render = String::new();
 
@@ -79,25 +144,22 @@ impl Row {
                 self.render.push(ch);
             }
         }
-        self.update_syntax()
+        self.update_syntax(row_idx);
     }
 
-    pub fn from(value: &String, syntax: Option<Rc<Syntax>>) -> Self {
+    pub fn from(row_idx: usize, value: &String, editor: *mut crate::Editor) -> Self {
     
         let mut saida = Row {
-            syntax,
+            editor,
             chars: value.clone(),
             render: String::new(),
-            highlight: vec![]
+            highlight: vec![],
+            ends_in_comment: false,
         }; 
 
-        saida.render_row();
+        saida.render_row(row_idx);
 
         saida
-    }
-
-    pub fn change_syntax(&mut self, syntax: Option<Rc<Syntax>>) {
-        self.syntax = syntax;
     }
 
     pub fn cx_to_rx(&self, idx: usize) -> usize {
@@ -113,26 +175,26 @@ impl Row {
         saida
     }
 
-    pub fn insert_char(&mut self, mut idx: usize, ch: char) { 
+    pub fn insert_char(&mut self, row_idx: usize, mut idx: usize, ch: char) { 
         
         idx = min(idx, self.len());
 
         self.chars.insert(idx, ch);
-        self.render_row();
+        self.render_row(row_idx);
     }
 
-    pub fn delete_char(&mut self, idx: usize) {
+    pub fn delete_char(&mut self,row_idx: usize, idx: usize) {
         if idx >= self.len() {
             return;
         }
 
         self.chars.remove(idx);
-        self.render_row();
+        self.render_row(row_idx);
     }
 
-    pub fn push(&mut self, new: String) {
+    pub fn push(&mut self, row_idx: usize, new: String) {
         self.chars.push_str(new.as_str());
-        self.render_row();
+        self.render_row(row_idx);
     }
 
 }

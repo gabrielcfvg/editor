@@ -172,13 +172,6 @@ impl Editor {
         }
     }
 
-    pub fn get_color(num: u8) -> Color {
-
-        match num {
-            1 => Color::Green,
-            _ => Color::White,
-        }
-    }
 
     pub fn render_screen(&mut self, force_all: bool) {
 
@@ -188,7 +181,7 @@ impl Editor {
                 
             if row.hlen() != 0 {
 
-                let mut color: u8 = 0;
+                let mut color: Color = Color::White;
 
                 for (i, ch) in row.render[init..end].chars().enumerate() {
 
@@ -200,14 +193,13 @@ impl Editor {
                     else {
 
                         editor.my_stdout.queue(ResetColor).unwrap()
-                                        .queue(SetForegroundColor(Editor::get_color(row.highlight[i+init]))).unwrap()
+                                        .queue(SetForegroundColor(row.highlight[i+init])).unwrap()
                                         .queue(Print(ch)).unwrap();
 
-                        color = i as u8;
+                        color = row.highlight[i+init];
                     }
-
-                    editor.my_stdout.queue(ResetColor).unwrap();
                 }
+                editor.my_stdout.queue(ResetColor).unwrap();
             }
             else {
 

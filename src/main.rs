@@ -6,19 +6,16 @@ mod editor;
 
 mod row;
 mod syntax;
-
-use editor::{Editor, get_syntax};
+use editor::Editor;
 use row::Row;
 use syntax::Syntax;
 
 use std::io::{Write, stdout};
-
 use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode, disable_raw_mode},
     execute
 
 };
-
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,10 +27,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         enable_raw_mode()?;
 
         let mut editor = Editor::new()?;
+        editor.ptr = Some(&mut editor);
 
         if let Some(v) = std::env::args().nth(1) {
             editor.open(v)?;
         }
+        // else {
+        //     editor.open(String::from("teste.c"))?;
+        // }
 
 
         editor.set_message(String::from("sair: CTRL-Q | salvar: CTRL-S"), -1);
@@ -48,8 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         
-        editor.log.push_str(format!("{:?}", editor.row_vec[editor.cursor_y].highlight).as_str());
-        std::fs::File::create("saida.log")?.write(editor.log.as_bytes()).unwrap();
+        //std::fs::File::create("saida.log")?.write(editor.log.as_bytes()).unwrap();
 
         Ok(())
     };
